@@ -65,7 +65,6 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 		strextra[i] = fmt.Sprintf("%s:%v", k, v)
 		i++
 	}
-	// Info.Printf("%s %s\n", strings.Join(strextra, " "), message)
 	_, file, line, _ := runtime.Caller(1)
 	extras := map[string]interface{}{
 		"file": file,
@@ -96,7 +95,6 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 
 	jsonLog := mBuf.Bytes()
 
-	// TODO: VERIFICAR COMO O JSON E PRINTADO! IDEAL E Q SEJA EM UMA LINHA APENAS! NAO PRINTAR EM LINHAS SEPARADAS!
 	log.Println(string(jsonLog))
 
 	if g.development {
