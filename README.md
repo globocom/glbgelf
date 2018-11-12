@@ -121,3 +121,11 @@ The following log message output contains the extra fields defined in the map va
 }
 ```
 
+Environment Variables
+--------------
+
+- **GELF_GRAYLOG_SERVER**: Environment variable with graylog server address and port. If Graylog server is initialized with an empty string in `InitLogger` function, the value stored in this ENV will be used;
+
+- **GELF_APP_NAME**: ENV used to store app's name. It will be used in case where an empty string is passed to `InitLogger` function.
+
+- **GELF_TAGS**: It will store tags in case an empty tag string is passed in `InitLogger` function.
