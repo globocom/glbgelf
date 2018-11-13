@@ -6,7 +6,17 @@ GLB GELF is a Go library used for structured log messages generation. They could
 Installation
 ----------
 
+Using version 1.0.0
+
 ```shell
+go get github.com/Graylog2/go-gelf/gelf
+go get github.com/globocom/glbgelf
+```
+
+Using version 2.0.0
+
+```shell
+go get gopkg.in/Graylog2/go-gelf.v2/gelf
 go get github.com/globocom/glbgelf
 ```
 
