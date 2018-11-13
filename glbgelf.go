@@ -110,11 +110,12 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 	var err error
 
 	if graylogAddr == "" {
-		graylogAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
-		if (!ok && !development) || (graylogAddr == "" && !development) {
+		envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
+		if (!ok && !development) || (envAddr == "" && !development) {
 			log.Fatalf("Error! Graylog server not defined.")
 			return
 		}
+		graylogAddr = envAddr
 	}
 	log.Println("Graylog server: ", graylogAddr)
 	gelfWriter, err = gelf.NewWriter(graylogAddr)
@@ -129,19 +130,21 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 	}
 
 	if appName == "" {
-		appName, ok := os.LookupEnv("GELF_APP_NAME")
-		if !ok || appName == "" {
-			appName = "undefined"
+		envApp, ok := os.LookupEnv("GELF_APP_NAME")
+		if !ok || envApp == "" {
+			envApp = "undefined"
 			log.Println("Nome de app nao definido. Usando undefined.")
 		}
+		appName = envApp
 	}
 
 	if tags == "" {
-		tags, ok := os.LookupEnv("GELF_TAGS")
-		if !ok || tags == "" {
-			tags = appName
+		envTags, ok := os.LookupEnv("GELF_TAGS")
+		if !ok || envTags == "" {
+			envTags = appName
 			log.Println("Tags not defined. Using appName.")
 		}
+		tags = envTags
 	}
 
 	gelfWriter.CompressionType = 2
