@@ -7,6 +7,7 @@ Installation
 ----------
 
 ```shell
+go get github.com/Graylog2/go-gelf/gelf
 go get github.com/globocom/glbgelf
 ```
 
