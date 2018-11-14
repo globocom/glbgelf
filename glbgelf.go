@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"gopkg.in/Graylog2/go-gelf.v2/gelf"
 	"log"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
-
-	"gopkg.in/Graylog2/go-gelf.v2/gelf"
 )
 
 var (
@@ -21,11 +20,12 @@ var (
 
 // Gelf struct
 type Gelf struct {
-	writer      *gelf.UDPWriter
+	writer      interface{}
 	appName     string
 	tags        string
 	hostname    string
 	development bool
+	protocol    string
 }
 
 // 1k bytes buffer by default
@@ -101,12 +101,37 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 		return nil
 	}
 
-	return g.writer.WriteMessage(m)
+	if strings.EqualFold(g.protocol, "tcp") {
+		return g.writer.(*gelf.TCPWriter).WriteMessage(m)
+	} else {
+		gUDPWriter := g.writer.(*gelf.UDPWriter)
+		gUDPWriter.CompressionType = 2
+		return gUDPWriter.WriteMessage(m)
+	}
+}
+
+// It will return the correct gelfWriter based on the chosen transport protocol
+func GetWriter(protocol, graylogAddr string) (interface{}, error) {
+
+	var err error
+	var gelfWriter interface{}
+
+	if strings.EqualFold(protocol, "tcp") {
+		gelfWriter, err = gelf.NewTCPWriter(graylogAddr)
+		return gelfWriter, err
+	}
+	if strings.EqualFold(protocol, "udp") {
+		gelfWriter, err = gelf.NewUDPWriter(graylogAddr)
+		return gelfWriter, err
+	}
+	errMessage := "Invalid Transport Protocol " + protocol
+	return gelfWriter, errors.New(errMessage)
 }
 
 // InitLogger Initialize logger with Info Debug and Error
-func InitLogger(graylogAddr string, appName string, tags string, development bool) {
+func InitLogger(graylogAddr string, appName string, tags string, development bool, protocol string) {
 	var err error
+	var gelfWriter interface{}
 
 	if graylogAddr == "" {
 		envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
@@ -117,9 +142,11 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		graylogAddr = envAddr
 	}
 	log.Println("Graylog server: ", graylogAddr)
-	gelfWriter, err := gelf.NewUDPWriter(graylogAddr)
+
+	gelfWriter, err = GetWriter(protocol, graylogAddr)
+
 	if err != nil {
-		log.Fatalf("gelf.NewWriter error: %s", err)
+		log.Fatalf("GelfWriter generation failed: %s", err)
 	}
 
 	var host string
@@ -146,14 +173,13 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		tags = envTags
 	}
 
-	gelfWriter.CompressionType = 2
-
 	Logger = &Gelf{
 		writer:      gelfWriter,
 		appName:     appName,
 		tags:        tags,
 		hostname:    host,
 		development: development,
+		protocol:    protocol,
 	}
 
 	if development {
