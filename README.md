@@ -7,7 +7,7 @@ Installation
 ----------
 
 ```shell
-go get github.com/Graylog2/go-gelf/gelf
+go get gopkg.in/Graylog2/go-gelf.v2/gelf
 go get github.com/globocom/glbgelf
 ```
 

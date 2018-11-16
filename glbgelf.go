@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Graylog2/go-gelf/gelf"
+	"gopkg.in/Graylog2/go-gelf.v2/gelf"
 )
 
 var (
@@ -21,7 +21,7 @@ var (
 
 // Gelf struct
 type Gelf struct {
-	writer      *gelf.Writer
+	writer      *gelf.UDPWriter
 	appName     string
 	tags        string
 	hostname    string
@@ -106,7 +106,6 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 
 // InitLogger Initialize logger with Info Debug and Error
 func InitLogger(graylogAddr string, appName string, tags string, development bool) {
-	var gelfWriter *gelf.Writer
 	var err error
 
 	if graylogAddr == "" {
@@ -118,7 +117,7 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		graylogAddr = envAddr
 	}
 	log.Println("Graylog server: ", graylogAddr)
-	gelfWriter, err = gelf.NewWriter(graylogAddr)
+	gelfWriter, err := gelf.NewUDPWriter(graylogAddr)
 	if err != nil {
 		log.Fatalf("gelf.NewWriter error: %s", err)
 	}
