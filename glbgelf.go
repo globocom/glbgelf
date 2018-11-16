@@ -102,11 +102,18 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 	}
 
 	if strings.EqualFold(g.protocol, "tcp") {
-		return g.writer.(*gelf.TCPWriter).WriteMessage(m)
+		if gTCPWriter, ok := g.writer.(*gelf.TCPWriter); !ok {
+			return errors.New("Could not return a TCPWriter!")
+		} else {
+			return gTCPWriter.WriteMessage(m)
+		}
 	} else {
-		gUDPWriter := g.writer.(*gelf.UDPWriter)
-		gUDPWriter.CompressionType = 2
-		return gUDPWriter.WriteMessage(m)
+		if gUDPWriter, ok := g.writer.(*gelf.UDPWriter); !ok {
+			return errors.New("Could not return a UDPWriter!")
+		} else {
+			gUDPWriter.CompressionType = 2
+			return gUDPWriter.WriteMessage(m)
+		}
 	}
 }
 
@@ -133,20 +140,22 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 	var err error
 	var gelfWriter interface{}
 
-	if graylogAddr == "" {
-		envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
-		if (!ok && !development) || (envAddr == "" && !development) {
-			log.Fatalf("Error! Graylog server not defined.")
-			return
+	if !development {
+		if graylogAddr == "" {
+			envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
+			if !ok || envAddr == "" {
+				log.Fatalf("Error! Graylog server not defined.")
+				return
+			}
+			graylogAddr = envAddr
 		}
-		graylogAddr = envAddr
-	}
-	log.Println("Graylog server: ", graylogAddr)
+		log.Println("Graylog server: ", graylogAddr)
 
-	gelfWriter, err = GetWriter(protocol, graylogAddr)
+		gelfWriter, err = GetWriter(protocol, graylogAddr)
 
-	if err != nil {
-		log.Fatalf("GelfWriter generation failed: %s", err)
+		if err != nil {
+			log.Fatalf("GelfWriter generation failed: %s", err)
+		}
 	}
 
 	var host string
@@ -159,7 +168,7 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		envApp, ok := os.LookupEnv("GELF_APP_NAME")
 		if !ok || envApp == "" {
 			envApp = "undefined"
-			log.Println("Nome de app nao definido. Usando undefined.")
+			log.Println("App's name undefined.")
 		}
 		appName = envApp
 	}
