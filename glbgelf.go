@@ -20,12 +20,11 @@ var (
 
 // Gelf struct
 type Gelf struct {
-	writer      interface{}
+	writer      gelf.Writer
 	appName     string
 	tags        string
 	hostname    string
 	development bool
-	protocol    string
 }
 
 // 1k bytes buffer by default
@@ -101,44 +100,31 @@ func (g *Gelf) SendLog(extra map[string]interface{}, loglevel string, messages .
 		return nil
 	}
 
-	if strings.EqualFold(g.protocol, "tcp") {
-		if gTCPWriter, ok := g.writer.(*gelf.TCPWriter); !ok {
-			return errors.New("Could not return a TCPWriter!")
-		} else {
-			return gTCPWriter.WriteMessage(m)
-		}
-	} else {
-		if gUDPWriter, ok := g.writer.(*gelf.UDPWriter); !ok {
-			return errors.New("Could not return a UDPWriter!")
-		} else {
-			gUDPWriter.CompressionType = 2
-			return gUDPWriter.WriteMessage(m)
-		}
-	}
+	return g.writer.WriteMessage(m)
 }
 
 // It will return the correct gelfWriter based on the chosen transport protocol
-func GetWriter(protocol, graylogAddr string) (interface{}, error) {
-
-	var err error
-	var gelfWriter interface{}
+func GetWriter(protocol, graylogAddr string) (gelf.Writer, error) {
 
 	if strings.EqualFold(protocol, "tcp") {
-		gelfWriter, err = gelf.NewTCPWriter(graylogAddr)
-		return gelfWriter, err
+		return gelf.NewTCPWriter(graylogAddr)
 	}
 	if strings.EqualFold(protocol, "udp") {
-		gelfWriter, err = gelf.NewUDPWriter(graylogAddr)
-		return gelfWriter, err
+		gelfUDPWriter, err := gelf.NewUDPWriter(graylogAddr)
+		if err != nil {
+			return gelfUDPWriter, err
+		}
+		gelfUDPWriter.CompressionType = 2
+		return gelfUDPWriter, nil
 	}
 	errMessage := "Invalid Transport Protocol " + protocol
-	return gelfWriter, errors.New(errMessage)
+	return nil, errors.New(errMessage)
 }
 
 // InitLogger Initialize logger with Info Debug and Error
 func InitLogger(graylogAddr string, appName string, tags string, development bool, protocol string) {
 	var err error
-	var gelfWriter interface{}
+	var gelfWriter gelf.Writer
 
 	if !development {
 		if graylogAddr == "" {
@@ -188,7 +174,6 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		tags:        tags,
 		hostname:    host,
 		development: development,
-		protocol:    protocol,
 	}
 
 	if development {
