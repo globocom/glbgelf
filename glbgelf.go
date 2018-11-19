@@ -25,7 +25,6 @@ type Gelf struct {
 	tags        string
 	hostname    string
 	development bool
-	protocol    string
 }
 
 // 1k bytes buffer by default
@@ -127,20 +126,22 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 	var err error
 	var gelfWriter gelf.Writer
 
-	if graylogAddr == "" {
-		envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
-		if (!ok && !development) || (envAddr == "" && !development) {
-			log.Fatalf("Error! Graylog server not defined.")
-			return
+	if !development {
+		if graylogAddr == "" {
+			envAddr, ok := os.LookupEnv("GELF_GRAYLOG_SERVER")
+			if !ok || envAddr == "" {
+				log.Fatalf("Error! Graylog server not defined.")
+				return
+			}
+			graylogAddr = envAddr
 		}
-		graylogAddr = envAddr
-	}
-	log.Println("Graylog server: ", graylogAddr)
+		log.Println("Graylog server: ", graylogAddr)
 
-	gelfWriter, err = GetWriter(protocol, graylogAddr)
+		gelfWriter, err = GetWriter(protocol, graylogAddr)
 
-	if err != nil {
-		log.Fatalf("GelfWriter generation failed: %s", err)
+		if err != nil {
+			log.Fatalf("GelfWriter generation failed: %s", err)
+		}
 	}
 
 	var host string
@@ -153,7 +154,7 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		envApp, ok := os.LookupEnv("GELF_APP_NAME")
 		if !ok || envApp == "" {
 			envApp = "undefined"
-			log.Println("Nome de app nao definido. Usando undefined.")
+			log.Println("App's name undefined.")
 		}
 		appName = envApp
 	}
@@ -173,7 +174,6 @@ func InitLogger(graylogAddr string, appName string, tags string, development boo
 		tags:        tags,
 		hostname:    host,
 		development: development,
-		protocol:    protocol,
 	}
 
 	if development {
